@@ -1,6 +1,6 @@
 ﻿namespace APIAggregator.Services {
     public interface IApiService
     {
-        Task<string> GetRawJson(string apiUrl);
+        Task<string> GetData(string apiUrl);
     }
 }

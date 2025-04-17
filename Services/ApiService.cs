@@ -15,7 +15,7 @@ namespace APIAggregator.Services {
             _logger = logger;
         }
 
-        public async Task<string> GetRawJson(string apiUrl) {
+        public async Task<string> GetData(string apiUrl) {
 
             var cacheKey = $"Api_{apiUrl}";
             if (_cache.TryGetValue(cacheKey, out string cachedata)) {

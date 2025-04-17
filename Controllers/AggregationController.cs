@@ -6,6 +6,7 @@ using System.Runtime.Remoting;
 using System.Text.Json;
 using APIAggregator.Models;
 using APIAggregator.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.AspNetCore.Mvc;
 
@@ -25,7 +26,9 @@ namespace APIAggregator.Controllers {
             _logger = logger;
         }
 
-        [HttpGet("GetAggregatedData")]
+        
+        [Authorize]
+        [HttpPost("GetAggregatedData")]
         public async Task<ActionResult> GetAggregatedData(AggregatorRequest request) {
 
             _logger.LogInformation("GetAggregatedData aggregation");
@@ -48,7 +51,7 @@ namespace APIAggregator.Controllers {
                     {
                         
                         try {
-                            var json = await _apiService.GetRawJson(api.Value.Url);
+                            var json = await _apiService.GetData(api.Value.Url);
                             results[api.Key] = json;
                         } catch (Exception ex) {
                             _logger.LogWarning(ex, "Fallback: Failed to get data from {ApiName}", api.Key);
@@ -61,7 +64,8 @@ namespace APIAggregator.Controllers {
 
                 #region Data Filtering/Sorting
                 var finalResult = new Dictionary<string, object?>();
-                foreach (var api in results) {
+                foreach (var api in results) 
+                {
 
                     if (string.IsNullOrEmpty(api.Value)) {
                         finalResult[api.Key] = null;
@@ -74,7 +78,7 @@ namespace APIAggregator.Controllers {
                         var root = doc.RootElement;
                         var path = apiConfigs.GetValueOrDefault(api.Key);
 
-                        var array = ExtractArrayFromPath(root, path?.ArrayPath);
+                        var array = GetArrayFromPath(root, path?.ArrayPath);
 
                         if (array is not null) {
                             var filtered = ApplyFilter(array, request);
@@ -90,7 +94,7 @@ namespace APIAggregator.Controllers {
                     catch (Exception ex) 
                     {
                         _logger.LogError(ex, "Error processing JSON for {ApiName}", api.Key);
-                        finalResult[api.Key] = null;
+                        finalResult[api.Key] = new List<string>();
                     }
                 }
                 #endregion
@@ -104,14 +108,16 @@ namespace APIAggregator.Controllers {
             }
         }
 
-        private JsonElement[]? ExtractArrayFromPath(JsonElement root, string? path) {
+        private JsonElement[]? GetArrayFromPath(JsonElement root, string? path) 
+        {
             if (string.IsNullOrWhiteSpace(path))
                 return null;
 
             var segments = path.Split('.', StringSplitOptions.RemoveEmptyEntries);
             JsonElement current = root;
 
-            foreach (var segment in segments) {
+            foreach (var segment in segments) 
+            {
                 if (current.ValueKind != JsonValueKind.Object || !current.TryGetProperty(segment, out current))
                     return null;
             }
@@ -121,7 +127,8 @@ namespace APIAggregator.Controllers {
 
             return null;
         }
-        private IEnumerable<JsonElement> ApplyFilter(IEnumerable<JsonElement> elements, AggregatorRequest query) {
+        private IEnumerable<JsonElement> ApplyFilter(IEnumerable<JsonElement> elements, AggregatorRequest query) 
+        {
             if (string.IsNullOrWhiteSpace(query.FilterBy) || string.IsNullOrWhiteSpace(query.FilterValue))
                 return elements;
 
@@ -133,7 +140,8 @@ namespace APIAggregator.Controllers {
                 return false;
             });
         }
-        private IEnumerable<JsonElement> ApplySort(IEnumerable<JsonElement> elements, string? sortBy, string? sortOrder) {
+        private IEnumerable<JsonElement> ApplySort(IEnumerable<JsonElement> elements, string? sortBy, string? sortOrder) 
+        {
             if (string.IsNullOrWhiteSpace(sortBy)) return elements;
 
             var sorted = elements
