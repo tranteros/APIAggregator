@@ -98,7 +98,7 @@ namespace APIAggregator.Controllers {
                     }
                 }
                 #endregion
-                return Ok(finalResult);
+                return Ok(new { data = finalResult });
 
             } catch (Exception ex) 
             {
