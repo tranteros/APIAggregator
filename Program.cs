@@ -1,6 +1,17 @@
+using APIAggregator.Models;
+using APIAggregator.Services;
+using NLog.Web;
+
 var builder = WebApplication.CreateBuilder(args);
 
+// Logging
+builder.Logging.ClearProviders();
+builder.Host.UseNLog();
+
 // Add services to the container.
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<IApiService, ApiService>();
+builder.Services.AddMemoryCache();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
